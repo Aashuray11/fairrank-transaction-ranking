@@ -1,0 +1,38 @@
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply m-0 font-body bg-lightbg text-slate-800 dark:bg-darkbg dark:text-slate-100;
+  background-image: radial-gradient(circle at 12% 20%, rgba(79, 70, 229, 0.18), transparent 25%),
+    radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.16), transparent 30%);
+  min-height: 100vh;
+}
+
+.glass {
+  @apply bg-white/60 dark:bg-slate-900/55 backdrop-blur-md border border-white/40 dark:border-slate-700/60 shadow-glass;
+}
+
+.section-title {
+  @apply font-display text-xl md:text-2xl font-semibold tracking-tight;
+}
+
+.table-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(79, 70, 229, 0.4);
+  border-radius: 999px;
+}
