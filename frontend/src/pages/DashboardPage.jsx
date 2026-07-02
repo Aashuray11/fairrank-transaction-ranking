@@ -5,7 +5,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
 import KpiCard from "../components/KpiCard";
-import Skeleton from "../components/Skeleton";
+import LoadingState from "../components/LoadingState";
 import { fetchDashboard, fetchAnalytics } from "../api/fairrank";
 import { currency, integer } from "../utils/format";
 
@@ -13,23 +13,31 @@ export default function DashboardPage() {
   const [dashboard, setDashboard] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
-        setLoading(true);
+        setError("");
+        if (!dashboard || !analytics) {
+          setLoading(true);
+        } else {
+          setRefreshing(true);
+        }
         const [dash, analyticData] = await Promise.all([fetchDashboard(), fetchAnalytics()]);
         if (!active) return;
         setDashboard(dash);
         setAnalytics(analyticData);
-        setError("");
       } catch (err) {
         if (!active) return;
         setError(err.response?.data?.message || "Unable to load dashboard");
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     };
     load();
@@ -47,14 +55,13 @@ export default function DashboardPage() {
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">FairRank risk-aware transaction intelligence with leaderboard visibility.</p>
       </div>
 
-      {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+      {loading ? <LoadingState variant="dashboard" title="Loading dashboard" description="Render can take a moment to wake up. Keep this tab open while we fetch the latest metrics." rows={4} /> : null}
+      {!loading && refreshing ? (
+        <div className="rounded-3xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
+          Refreshing dashboard data from the server...
         </div>
-      ) : error ? (
+      ) : null}
+      {error && !dashboard ? (
         <ErrorState message={error} onRetry={() => window.location.reload()} />
       ) : (
         <>
@@ -74,21 +81,25 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={analytics?.revenueTrend || []}>
-                    <defs>
-                      <linearGradient id="trendGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0.05} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="revenue" stroke="#4F46E5" fill="url(#trendGradient)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {analytics?.revenueTrend?.length ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={analytics.revenueTrend}>
+                      <defs>
+                        <linearGradient id="trendGradient" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.8} />
+                          <stop offset="95%" stopColor="#4F46E5" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} />
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="revenue" stroke="#4F46E5" fill="url(#trendGradient)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <EmptyState title="No revenue data" description="Charts will appear once transactions are processed." />
+                )}
               </div>
             </section>
 

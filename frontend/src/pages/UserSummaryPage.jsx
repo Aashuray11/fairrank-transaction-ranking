@@ -4,13 +4,14 @@ import { FiClock, FiTarget, FiTrendingUp, FiUser } from "react-icons/fi";
 import { fetchUserSummary } from "../api/fairrank";
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
-import Skeleton from "../components/Skeleton";
+import LoadingState from "../components/LoadingState";
 import { currency, formatDateTime, integer } from "../utils/format";
 
 export default function UserSummaryPage() {
   const [userId, setUserId] = useState("");
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
 
   const search = async (event) => {
@@ -20,6 +21,7 @@ export default function UserSummaryPage() {
       return;
     }
     try {
+      setSearching(true);
       setLoading(true);
       setError("");
       const data = await fetchUserSummary(userId.trim());
@@ -29,6 +31,7 @@ export default function UserSummaryPage() {
       setError(err.response?.status === 404 ? "User does not exist" : err.response?.data?.message || "Unable to fetch summary");
     } finally {
       setLoading(false);
+      setSearching(false);
     }
   };
 
@@ -51,7 +54,7 @@ export default function UserSummaryPage() {
         </button>
       </form>
 
-      {loading ? <Skeleton className="h-72" /> : null}
+      {loading ? <LoadingState title="Loading user summary" description="Fetching the profile, rank, and recent transactions from Render." rows={4} /> : null}
       {error ? <ErrorState message={error} onRetry={() => setError("")} /> : null}
 
       {!loading && !summary && !error ? (

@@ -1,6 +1,15 @@
+import os
+import site
+import sys
 import logging
 import time
 from datetime import datetime
+
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_VENV_SITE_PACKAGES = os.path.join(_BASE_DIR, ".venv", "Lib", "site-packages")
+if os.path.isdir(_VENV_SITE_PACKAGES) and _VENV_SITE_PACKAGES not in sys.path:
+    site.addsitedir(_VENV_SITE_PACKAGES)
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS

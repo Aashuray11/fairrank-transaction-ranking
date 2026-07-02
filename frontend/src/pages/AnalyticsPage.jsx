@@ -3,27 +3,35 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, P
 
 import { fetchAnalytics } from "../api/fairrank";
 import ErrorState from "../components/ErrorState";
-import Skeleton from "../components/Skeleton";
+import LoadingState from "../components/LoadingState";
 
 const pieColors = ["#4F46E5", "#7C3AED", "#10B981", "#EF4444"];
 
 export default function AnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
-        setLoading(true);
+        setError("");
+        if (!data) {
+          setLoading(true);
+        } else {
+          setRefreshing(true);
+        }
         const response = await fetchAnalytics();
         if (active) setData(response);
-        setError("");
       } catch (err) {
         if (active) setError(err.response?.data?.message || "Unable to load analytics");
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     };
     load();
@@ -39,8 +47,13 @@ export default function AnalyticsPage() {
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Visual breakdown of revenue, activity, and reward distribution.</p>
       </div>
 
-      {loading ? <Skeleton className="h-[32rem]" /> : null}
-      {error ? <ErrorState message={error} onRetry={() => window.location.reload()} /> : null}
+      {loading ? <LoadingState title="Loading analytics" description="Pulling chart data from Render. Cold starts can take a few seconds." rows={5} /> : null}
+      {!loading && refreshing ? (
+        <div className="rounded-3xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
+          Refreshing analytics data...
+        </div>
+      ) : null}
+      {error && !data ? <ErrorState message={error} onRetry={() => window.location.reload()} /> : null}
 
       {data ? (
         <div className="grid gap-6 xl:grid-cols-2">

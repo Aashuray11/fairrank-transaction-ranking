@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { fetchRanking } from "../api/fairrank";
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
-import Skeleton from "../components/Skeleton";
+import LoadingState from "../components/LoadingState";
 import { downloadCsv } from "../utils/csv";
 import { integer } from "../utils/format";
 
@@ -16,20 +16,26 @@ export default function LeaderboardPage() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
 
   const load = async (currentPage = page, currentSearch = search) => {
     try {
-      setLoading(true);
+      setError("");
+      if (!data.length) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       const response = await fetchRanking({ page: currentPage, limit: pageSize, search: currentSearch });
       setData(response.data || []);
       setTotal(response.total || 0);
-      setError("");
     } catch (err) {
       setError(err.response?.data?.message || "Unable to load leaderboard");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -74,8 +80,13 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {loading ? <Skeleton className="h-96" /> : null}
-      {error ? <ErrorState message={error} onRetry={() => load(page, search)} /> : null}
+      {loading ? <LoadingState title="Loading leaderboard" description="Pulling the latest rankings from Render. This can take a few seconds on a cold start." rows={4} /> : null}
+      {!loading && refreshing ? (
+        <div className="rounded-3xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
+          Refreshing leaderboard data...
+        </div>
+      ) : null}
+      {error && !data.length ? <ErrorState message={error} onRetry={() => load(page, search)} /> : null}
 
       {!loading && !error ? (
         <>
